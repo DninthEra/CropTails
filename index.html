@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DNinthEra - Game Launcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.1"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: 'hsl(225 30% 5%)',
+          foreground: 'hsl(210 20% 96%)',
+          card: 'hsl(225 25% 10%)',
+          'card-foreground': 'hsl(210 20% 96%)',
+          muted: 'hsl(225 20% 15%)',
+          'muted-foreground': 'hsl(215 15% 65%)',
+          border: 'hsl(220 20% 20%)',
+          ring: 'hsl(185 100% 55%)',
+        },
+        fontFamily: {
+          sans: ['Rajdhani', 'Noto Sans SC', 'sans-serif'],
+          display: ['Orbitron', 'Rajdhani', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: hsl(225 30% 5%); color: hsl(210 20% 96%); font-family: 'Rajdhani', 'Noto Sans SC', sans-serif; }
+  #root { width: 100%; height: 100%; }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+  .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-slow { animation: spin-slow 8s linear infinite; }
+  .animate-spin-reverse { animation: spin-slow 12s linear infinite reverse; }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+  .animate-shimmer { animation: shimmer 2s linear infinite; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .anim-fade-up { animation: fadeInUp 1s ease-out forwards; }
+  .anim-fade { animation: fadeIn 0.8s ease-out forwards; }
+  .anim-scale { animation: scaleIn 0.6s ease-out forwards; }
+  .delay-100 { animation-delay: 0.1s; opacity: 0; }
+  .delay-200 { animation-delay: 0.2s; opacity: 0; }
+  .delay-300 { animation-delay: 0.3s; opacity: 0; }
+  .delay-500 { animation-delay: 0.5s; opacity: 0; }
+  .delay-800 { animation-delay: 0.8s; opacity: 0; }
+  .delay-1200 { animation-delay: 1.2s; opacity: 0; }
+
+  .title-glow {
+    text-shadow: 0 0 60px rgba(139, 92, 246, 0.4), 0 0 120px rgba(0, 240, 255, 0.2);
+  }
+
+  .scanlines {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 240, 255, 0.03) 2px,
+      rgba(0, 240, 255, 0.03) 4px
+    );
+  }
+
+  .btn-glow {
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), 0 0 60px rgba(139, 92, 246, 0.2);
+  }
+
+  /* 过渡遮罩动画 */
+  @keyframes wipeDown {
+    from { top: -100%; }
+    to { top: 100%; }
+  }
+  @keyframes expandCircle {
+    from { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+    to { transform: translate(-50%, -50%) scale(30); opacity: 0; }
+  }
+  .transition-wipe { animation: wipeDown 1s ease-in-out forwards; }
+  .transition-expand { animation: expandCircle 1.2s ease-out forwards; }
+
+  .page { display: none; width: 100%; height: 100%; }
+  .page.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ============ 加载页 ============ -->
+<div id="page-loading" class="page active relative w-full h-full overflow-hidden bg-background">
+  <canvas id="particles" class="absolute inset-0 z-0"></canvas>
+
+  <!-- 光晕层 -->
+  <div class="absolute inset-0 z-[1] pointer-events-none">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-fuchsia-500/10 rounded-full blur-[100px] animate-pulse-slow" style="animation-delay:1s"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-violet-500/5 rounded-full blur-[120px]"></div>
+  </div>
+
+  <!-- 扫描线 -->
+  <div class="absolute inset-0 z-[2] pointer-events-none scanlines"></div>
+
+  <!-- 主内容 -->
+  <div class="relative z-10 flex w-full h-full flex-col items-center justify-center px-4">
+    <div class="flex flex-col items-center mb-12 md:mb-16 anim-fade-up">
+      <!-- LOGO 圆环 -->
+      <div class="relative mb-8">
+        <div class="w-28 h-28 md:w-36 md:h-36 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin-slow"></div>
+        <div class="absolute inset-2 rounded-full border border-fuchsia-500/20 border-b-fuchsia-400/60 animate-spin-reverse"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/20 backdrop-blur-sm border border-cyan-400/30 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 md:w-10 md:h-10">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 游戏标题 -->
+      <div class="relative">
+        <div class="absolute -inset-8 bg-gradient-to-r from-cyan-500/0 via-violet-500/20 to-fuchsia-500/0 blur-3xl pointer-events-none"></div>
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[calc(100%+1rem)] w-12 md:w-20 h-px bg-gradient-to-r from-transparent to-cyan-400/60"></div>
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-[calc(100%+1rem)] w-12 md:w-20 h-px bg-gradient-to-l from-transparent to-fuchsia-400/60"></div>
+
+        <h1 class="relative text-5xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-violet-400 to-fuchsia-400 title-glow" style="font-family:'Orbitron','Rajdhani',sans-serif; letter-spacing:0.15em;">
+          DNinthEra
+        </h1>
+
+        <div class="flex items-center justify-center gap-3 mt-4">
+          <div class="w-2 h-2 rounded-full bg-cyan-400" style="box-shadow:0 0 8px rgba(34,211,238,0.8)"></div>
+          <div class="h-px w-16 md:w-24 bg-gradient-to-r from-cyan-400/60 via-violet-400/40 to-fuchsia-400/60"></div>
+          <div class="w-2 h-2 rounded-full bg-fuchsia-400" style="box-shadow:0 0 8px rgba(232,121,249,0.8)"></div>
+          <div class="h-px w-16 md:w-24 bg-gradient-to-l from-cyan-400/60 via-violet-400/40 to-fuchsia-400/60"></div>
+          <div class="w-2 h-2 rounded-full bg-cyan-400" style="box-shadow:0 0 8px rgba(34,211,238,0.8)"></div>
+        </div>
+
+        <p class="text-center text-[10px] md:text-xs text-muted-foreground/70 mt-5 uppercase" style="letter-spacing:0.5em;">
+          D · Ninth · Era
+        </p>
+      </div>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="w-full max-w-md mb-4 anim-fade-up delay-300">
+      <div class="relative h-1.5 md:h-2 w-full bg-muted/50 rounded-full overflow-hidden">
+        <div id="progress-glow" class="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500/30 via-violet-500/30 to-fuchsia-500/30 blur-sm w-0"></div>
+        <div id="progress-bar" class="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 rounded-full w-0 transition-[width] duration-75"></div>
+        <div id="progress-highlight" class="absolute top-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/40" style="left:-32px"></div>
+      </div>
+      <div class="flex justify-between items-center mt-3 text-xs md:text-sm">
+        <span class="text-muted-foreground">正在加载游戏资源...</span>
+        <span id="progress-text" class="font-mono text-cyan-400 tabular-nums">0%</span>
+      </div>
+    </div>
+
+    <!-- 进入游戏按钮 -->
+    <div class="mt-8 md:mt-12 anim-fade-up delay-500">
+      <button id="enter-btn" disabled
+        class="relative group px-10 md:px-14 py-3.5 md:py-4 rounded-full font-bold text-sm md:text-base uppercase transition-all duration-500 overflow-hidden bg-muted/30 text-muted-foreground cursor-not-allowed tracking-[0.2em]">
+        <span id="btn-shimmer" class="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style="display:none; left:-33%"></span>
+        <span class="relative z-10 flex items-center gap-2">
+          进入游戏
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 md:w-5 md:h-5">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </span>
+      </button>
+      <p id="enter-hint" class="text-center text-xs text-muted-foreground mt-4 tracking-wider opacity-0 transition-opacity duration-500">
+        按 Enter 键快速进入
+      </p>
+    </div>
+
+    <!-- 底部装饰 -->
+    <div class="absolute bottom-6 md:bottom-8 text-xs text-muted-foreground/50 anim-fade delay-1200" style="letter-spacing:0.2em;">
+      v1.0.0 · PRESS START
+    </div>
+  </div>
+
+  <!-- 四角装饰 -->
+  <div class="absolute top-6 left-6 w-8 h-8 border-l-2 border-t-2 border-cyan-500/30 z-10"></div>
+  <div class="absolute top-6 right-6 w-8 h-8 border-r-2 border-t-2 border-cyan-500/30 z-10"></div>
+  <div class="absolute bottom-6 left-6 w-8 h-8 border-l-2 border-b-2 border-fuchsia-500/30 z-10"></div>
+  <div class="absolute bottom-6 right-6 w-8 h-8 border-r-2 border-b-2 border-fuchsia-500/30 z-10"></div>
+
+  <!-- 过渡遮罩 -->
+  <div id="transition-overlay" class="fixed inset-0 z-50 bg-background pointer-events-none opacity-0">
+    <div id="transition-wipe" class="absolute left-0 right-0 h-1/2 bg-gradient-to-b from-transparent via-cyan-500/20 to-transparent" style="top:-100%"></div>
+    <div id="transition-circle" class="absolute top-1/2 left-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400 to-fuchsia-500" style="transform:translate(-50%,-50%) scale(0); opacity:0"></div>
+  </div>
+</div>
+
+<!-- ============ 游戏占位页 ============ -->
+<div id="page-game" class="page relative w-full h-full overflow-hidden bg-background">
+  <canvas id="particles-game" class="absolute inset-0 z-0"></canvas>
+
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[120px]"></div>
+  </div>
+  <div class="absolute inset-0 pointer-events-none scanlines opacity-50"></div>
+
+  <div class="relative z-10 w-full h-full flex items-center justify-center">
+    <div class="text-center px-4 anim-scale">
+      <div class="inline-block mb-6">
+        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-cyan-500/20 border-t-cyan-400 animate-spin-slow"></div>
+      </div>
+      <h1 id="game-loading-text" class="text-xl md:text-2xl font-bold text-foreground mb-2" style="letter-spacing:0.1em;">游戏加载中</h1>
+      <p class="text-sm text-muted-foreground">正在初始化游戏资源，请稍候</p>
+      <div class="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+        </svg>
+        <span>GAME INITIALIZING</span>
+      </div>
+      <button onclick="goLoading()"
+        class="mt-10 inline-flex items-center gap-2 px-5 py-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-400/50 transition-all duration-300 text-xs font-medium anim-fade-up delay-800"
+        style="letter-spacing:0.1em; opacity:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        返回加载页
+      </button>
+    </div>
+  </div>
+
+  <div class="absolute top-4 left-4 w-6 h-6 border-l border-t border-cyan-500/20 z-10 pointer-events-none"></div>
+  <div class="absolute top-4 right-4 w-6 h-6 border-r border-t border-cyan-500/20 z-10 pointer-events-none"></div>
+  <div class="absolute bottom-4 left-4 w-6 h-6 border-l border-b border-fuchsia-500/20 z-10 pointer-events-none"></div>
+  <div class="absolute bottom-4 right-4 w-6 h-6 border-r border-b border-fuchsia-500/20 z-10 pointer-events-none"></div>
+</div>
+
+<script>
+// ============ 粒子系统 ============
+function initParticles(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let width, height;
+  const colors = ['#00f0ff', '#ff00aa', '#8b5cf6', '#06b6d4'];
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    const count = Math.floor((width * height) / 15000);
+    particles = [];
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 2 + 1,
+        opacity: Math.random() * 0.5 + 0.3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      });
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
+    particles.forEach((p, i) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > width) p.vx *= -1;
+      if (p.y < 0 || p.y > height) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.opacity;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const dx = p.x - p2.x;
+        const dy = p.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = p.color;
+          ctx.globalAlpha = (1 - dist / 120) * 0.15;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+    });
+    requestAnimationFrame(animate);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  animate();
+}
+
+// ============ 加载进度 ============
+let progress = 0;
+let isLoadingComplete = false;
+let isTransitioning = false;
+
+function startLoading() {
+  progress = 0;
+  isLoadingComplete = false;
+  const bar = document.getElementById('progress-bar');
+  const glow = document.getElementById('progress-glow');
+  const highlight = document.getElementById('progress-highlight');
+  const text = document.getElementById('progress-text');
+  const btn = document.getElementById('enter-btn');
+  const hint = document.getElementById('enter-hint');
+  const shimmer = document.getElementById('btn-shimmer');
+
+  const timer = setInterval(() => {
+    const increment = Math.random() * 3 + 0.5;
+    progress = Math.min(100, progress + increment);
+    const pct = Math.floor(progress);
+
+    bar.style.width = progress + '%';
+    glow.style.width = progress + '%';
+    highlight.style.left = `calc(${progress}% - 32px)`;
+    text.textContent = pct + '%';
+
+    if (progress >= 100) {
+      clearInterval(timer);
+      isLoadingComplete = true;
+      btn.disabled = false;
+      btn.className = 'relative group px-10 md:px-14 py-3.5 md:py-4 rounded-full font-bold text-sm md:text-base uppercase transition-all duration-500 overflow-hidden bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 text-white cursor-pointer hover:scale-105 btn-glow tracking-[0.2em]';
+      shimmer.style.display = 'block';
+      shimmer.classList.add('animate-shimmer');
+      hint.style.opacity = '1';
+    }
+  }, 80);
+}
+
+// ============ 页面切换 ============
+function goGame() {
+  if (!isLoadingComplete || isTransitioning) return;
+  isTransitioning = true;
+
+  const overlay = document.getElementById('transition-overlay');
+  const wipe = document.getElementById('transition-wipe');
+  const circle = document.getElementById('transition-circle');
+
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity 0.3s';
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+  });
+
+  wipe.classList.add('transition-wipe');
+  circle.classList.add('transition-expand');
+
+  setTimeout(() => {
+    document.getElementById('page-loading').classList.remove('active');
+    document.getElementById('page-game').classList.add('active');
+    initGameDots();
+    isTransitioning = false;
+    // 重置过渡
+    setTimeout(() => {
+      overlay.style.opacity = '0';
+      wipe.classList.remove('transition-wipe');
+      circle.classList.remove('transition-expand');
+    }, 300);
+  }, 1200);
+}
+
+function goLoading() {
+  document.getElementById('page-game').classList.remove('active');
+  document.getElementById('page-loading').classList.add('active');
+  // 重置进度条重新播放
+  startLoading();
+}
+
+// ============ 游戏页省略号动画 ============
+let gameDotsTimer = null;
+function initGameDots() {
+  if (gameDotsTimer) clearInterval(gameDotsTimer);
+  const el = document.getElementById('game-loading-text');
+  let dots = 0;
+  gameDotsTimer = setInterval(() => {
+    dots = (dots + 1) % 4;
+    el.textContent = '游戏加载中' + '.'.repeat(dots);
+  }, 500);
+}
+
+// ============ 初始化 ============
+window.addEventListener('DOMContentLoaded', () => {
+  initParticles('particles');
+  initParticles('particles-game');
+  startLoading();
+
+  document.getElementById('enter-btn').addEventListener('click', goGame);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const loadingActive = document.getElementById('page-loading').classList.contains('active');
+      if (loadingActive && isLoadingComplete && !isTransitioning) {
+        goGame();
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
