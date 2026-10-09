@@ -381,16 +381,8 @@ function goGame() {
   circle.classList.add('transition-expand');
 
   setTimeout(() => {
-    document.getElementById('page-loading').classList.remove('active');
-    document.getElementById('page-game').classList.add('active');
-    initGameDots();
-    isTransitioning = false;
-    // 重置过渡
-    setTimeout(() => {
-      overlay.style.opacity = '0';
-      wipe.classList.remove('transition-wipe');
-      circle.classList.remove('transition-expand');
-    }, 300);
+    // 进入 Godot 导出的游戏页面
+    window.location.href = 'Game/crop_tails.html';
   }, 1200);
 }
 
